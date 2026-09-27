@@ -11,6 +11,19 @@ npm install
 npm run dev                    # http://localhost:3000
 ```
 
+## Keeping Next.js patched
+
+Netlify blocks deploys of Next.js versions with known critical CVEs, so a
+vulnerable version fails at the upload step with HTTP 400 rather than during
+the build — the build log looks fine right up until it doesn't.
+
+Pinned here: `next@15.1.12`, `react@19.0.1`, `react-dom@19.0.1`, which are the
+patched releases for CVE-2025-55182 (React Server Components RCE) on the 15.1
+line. If a future deploy is blocked the same way, check the advisory Netlify
+links to and bump to the patched release **for your current minor line** — the
+React advisory lists one per line, which is a smaller jump than moving to the
+newest major.
+
 ## Deploying to Netlify
 
 1. Push this folder to its own Git repository.
@@ -35,4 +48,3 @@ user auth in front of the API instead.
 - `/jobs/[id]` — progress, counters, cost, filterable results, inline editing, export
 
 Polling runs at 2.5s while a job is active and stops when it finishes.
-# ceo-resolver-fe

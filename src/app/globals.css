@@ -142,3 +142,10 @@ td.domain { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-si
 }
 .jobcard:hover { border-color: var(--accent); }
 .jobcard .name { font-weight: 500; }
+
+.keybox {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 11px 13px; margin: 8px 0 12px; overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+  user-select: all;
+}

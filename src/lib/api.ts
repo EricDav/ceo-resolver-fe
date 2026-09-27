@@ -155,3 +155,88 @@ export const api = {
     return `${API_URL}/api/jobs/${id}/export.${format}${q ? `?${q}` : ''}`;
   },
 };
+
+// ---------------------------------------------------------------------------
+// Admin
+//
+// The admin key is typed in by an operator and kept in sessionStorage for the
+// tab's lifetime only. It is deliberately NOT a NEXT_PUBLIC_ variable: baking
+// it into the bundle would hand full tenant control to anyone who loads the
+// page.
+// ---------------------------------------------------------------------------
+
+const ADMIN_KEY_STORAGE = 'resolver.adminKey';
+
+export const adminKey = {
+  get(): string {
+    try {
+      return sessionStorage.getItem(ADMIN_KEY_STORAGE) ?? '';
+    } catch {
+      return '';
+    }
+  },
+  set(key: string) {
+    try {
+      sessionStorage.setItem(ADMIN_KEY_STORAGE, key);
+    } catch {
+      /* private mode */
+    }
+  },
+  clear() {
+    try {
+      sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+    } catch {
+      /* private mode */
+    }
+  },
+};
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  apiKeyHint: string;
+  dataforseoLogin: string | null;
+  hasCredentials: boolean;
+  monthlyCapUsd: number;
+  perJobCapUsd: number;
+  serpDepth: number;
+  active: boolean;
+  createdAt: string;
+  spendThisMonth?: number;
+}
+
+export interface TenantWithKey extends Tenant {
+  /** Present only on create and rotate. Never retrievable afterwards. */
+  apiKey: string;
+}
+
+function adminHeaders(extra: Record<string, string> = {}) {
+  return { ...extra, 'x-admin-key': adminKey.get() };
+}
+
+export const admin = {
+  listTenants: () =>
+    fetch(`${API_URL}/api/admin/tenants`, { headers: adminHeaders(), cache: 'no-store' })
+      .then(unwrap<Tenant[]>),
+
+  createTenant: (body: Record<string, unknown>) =>
+    fetch(`${API_URL}/api/admin/tenants`, {
+      method: 'POST',
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+    }).then(unwrap<TenantWithKey>),
+
+  updateTenant: (id: string, body: Record<string, unknown>) =>
+    fetch(`${API_URL}/api/admin/tenants/${id}`, {
+      method: 'PATCH',
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+    }).then(unwrap<Tenant>),
+
+  rotateKey: (id: string) =>
+    fetch(`${API_URL}/api/admin/tenants/${id}/rotate-key`, {
+      method: 'POST',
+      headers: adminHeaders(),
+    }).then(unwrap<TenantWithKey>),
+};
