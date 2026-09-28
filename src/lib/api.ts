@@ -140,19 +140,56 @@ export const api = {
     fetch(`${API_URL}/api/jobs/${id}/status-counts`, { headers: headers(), cache: 'no-store' })
       .then(unwrap<StatusCounts>),
 
-  exportUrl: (
+  /**
+   * Downloads an export.
+   *
+   * A plain <a href> cannot carry the x-api-key header, so the browser would
+   * navigate unauthenticated and the API would answer 401. Fetch it with the
+   * header instead and save the response as a blob.
+   *
+   * The alternative — putting the key in the query string — would leak it into
+   * browser history, server logs and Referer headers, so it is not used.
+   */
+  download: async (
     id: string,
     format: 'csv' | 'json',
-    status?: StatusFilter,
-    detail?: 'full',
-    mailStatus?: string,
+    opts: { status?: StatusFilter; detail?: 'full'; mailStatus?: string } = {},
   ) => {
     const qs = new URLSearchParams();
-    if (status) qs.set('status', status);
-    if (detail) qs.set('detail', detail);
-    if (mailStatus) qs.set('mailStatus', mailStatus);
+    if (opts.status) qs.set('status', opts.status);
+    if (opts.detail) qs.set('detail', opts.detail);
+    if (opts.mailStatus) qs.set('mailStatus', opts.mailStatus);
     const q = qs.toString();
-    return `${API_URL}/api/jobs/${id}/export.${format}${q ? `?${q}` : ''}`;
+
+    const res = await fetch(
+      `${API_URL}/api/jobs/${id}/export.${format}${q ? `?${q}` : ''}`,
+      { headers: headers() },
+    );
+    if (!res.ok) {
+      let message = `Download failed (${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.message) message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+      } catch {
+        /* not JSON */
+      }
+      throw new Error(message);
+    }
+
+    const disposition = res.headers.get('Content-Disposition') ?? '';
+    const match = /filename="?([^";]+)"?/.exec(disposition);
+    const filename = match?.[1] ?? `leaders-${id}.${format}`;
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Give the browser a moment to start the save before revoking.
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   },
 };
 

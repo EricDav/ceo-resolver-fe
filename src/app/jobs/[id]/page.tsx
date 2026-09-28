@@ -49,6 +49,29 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
     return () => clearInterval(t);
   }, [job, loadJob, loadResults]);
 
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  /**
+   * Exports go through fetch, not a link, so the API key travels in a header
+   * rather than the URL. A plain <a href> would navigate without it and the
+   * API would answer 401.
+   */
+  async function download(
+    format: 'csv' | 'json',
+    opts: { status?: StatusFilter; mailStatus?: string; detail?: 'full' },
+    label?: string,
+  ) {
+    setDownloading(label ?? format);
+    setError(null);
+    try {
+      await api.download(id, format, opts);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDownloading(null);
+    }
+  }
+
   async function act(verb: 'resume' | 'retry-errors' | 'cancel' | 'pause') {
     setError(null);
     try {
@@ -130,15 +153,20 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
             Retry {job.errored} error{job.errored === 1 ? '' : 's'}
           </button>
           <span style={{ flex: 1 }} />
-          <a className="small" href={api.exportUrl(id, 'json', status, undefined, mailStatus)}>
-            Export JSON{status ? ` (${status})` : ' (resolved, deliverable)'}
-          </a>
-          <a className="small" href={api.exportUrl(id, 'csv', status, undefined, mailStatus)}>
-            Export CSV{status ? ` (${status})` : ''}
-          </a>
-          <a className="small muted" href={api.exportUrl(id, 'json', status, 'full')}>
-            Full detail JSON
-          </a>
+          <button className="small" disabled={downloading !== null}
+                  onClick={() => download('json', { status, mailStatus })}>
+            {downloading === 'json'
+              ? 'Preparing...'
+              : `Export JSON${status ? ` (${status})` : ' (resolved, deliverable)'}`}
+          </button>
+          <button className="small" disabled={downloading !== null}
+                  onClick={() => download('csv', { status, mailStatus })}>
+            {downloading === 'csv' ? 'Preparing...' : `Export CSV${status ? ` (${status})` : ''}`}
+          </button>
+          <button className="small muted" disabled={downloading !== null}
+                  onClick={() => download('json', { status, detail: 'full' }, 'full')}>
+            {downloading === 'full' ? 'Preparing...' : 'Full detail JSON'}
+          </button>
         </div>
       </section>
 
