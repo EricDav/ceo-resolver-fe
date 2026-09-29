@@ -58,10 +58,9 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
    */
   async function download(
     format: 'csv' | 'json',
-    opts: { status?: StatusFilter; mailStatus?: string; detail?: 'full' },
-    label?: string,
+    opts: { status?: StatusFilter; mailStatus?: string },
   ) {
-    setDownloading(label ?? format);
+    setDownloading(format);
     setError(null);
     try {
       await api.download(id, format, opts);
@@ -155,17 +154,11 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           <span style={{ flex: 1 }} />
           <button className="small" disabled={downloading !== null}
                   onClick={() => download('json', { status, mailStatus })}>
-            {downloading === 'json'
-              ? 'Preparing...'
-              : `Export JSON${status ? ` (${status})` : ' (resolved, deliverable)'}`}
+            {downloading === 'json' ? 'Preparing...' : 'Export JSON (mail merge)'}
           </button>
           <button className="small" disabled={downloading !== null}
                   onClick={() => download('csv', { status, mailStatus })}>
-            {downloading === 'csv' ? 'Preparing...' : `Export CSV${status ? ` (${status})` : ''}`}
-          </button>
-          <button className="small muted" disabled={downloading !== null}
-                  onClick={() => download('json', { status, detail: 'full' }, 'full')}>
-            {downloading === 'full' ? 'Preparing...' : 'Full detail JSON'}
+            {downloading === 'csv' ? 'Preparing...' : 'Export CSV (full detail)'}
           </button>
         </div>
       </section>
@@ -203,7 +196,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
                     onChange={(e) => { setMailStatus(e.target.value); setPageNo(1); }}>
               <option value="">All</option>
               <option value="deliverable">
-                Domain accepts mail{mail ? ` (${mail.deliverable})` : ''}
+                Not a dead domain{mail ? ` (${mail.deliverable})` : ''}
               </option>
               <option value="undeliverable">
                 Dead domain{mail ? ` (${mail.undeliverable})` : ''}

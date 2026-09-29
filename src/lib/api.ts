@@ -49,7 +49,10 @@ export interface DomainResult {
 }
 
 export interface Deliverability {
+  /** Everything not provably dead, including rows whose check has not run. */
   deliverable: number;
+  /** Subset of the above with a confirmed MX record. */
+  mxConfirmed?: number;
   undeliverable: number;
   byStatus: Record<string, number>;
   providers: Array<{ provider: string; count: number }>;
@@ -153,11 +156,10 @@ export const api = {
   download: async (
     id: string,
     format: 'csv' | 'json',
-    opts: { status?: StatusFilter; detail?: 'full'; mailStatus?: string } = {},
+    opts: { status?: StatusFilter; mailStatus?: string } = {},
   ) => {
     const qs = new URLSearchParams();
     if (opts.status) qs.set('status', opts.status);
-    if (opts.detail) qs.set('detail', opts.detail);
     if (opts.mailStatus) qs.set('mailStatus', opts.mailStatus);
     const q = qs.toString();
 
