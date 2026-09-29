@@ -143,11 +143,11 @@ export default function AdminPage() {
           <div className="row">
             <div className="field">
               <label htmlFor="name">Client name</label>
-              <input id="name" name="name" type="text" required placeholder="ABC Ltd" />
+              <input id="name" name="name" type="text" required placeholder="Acme Ltd" />
             </div>
             <div className="field">
-              <label htmlFor="slug">Domain (identifier)</label>
-              <input id="slug" name="slug" type="text" required placeholder="abc.com" />
+              <label htmlFor="slug">Slug (short unique id)</label>
+              <input id="slug" name="slug" type="text" required placeholder="acme" />
             </div>
           </div>
           <div className="field">
