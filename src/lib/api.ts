@@ -34,6 +34,7 @@ export interface Job {
 export interface DomainResult {
   id: string;
   domain: string;
+  sourceEmail?: string;
   status: ResultStatus;
   leaderName: string | null;
   title: string | null;
@@ -46,6 +47,15 @@ export interface DomainResult {
   reviewed: boolean;
   mailStatus: string;
   mailProvider: string | null;
+}
+
+/**
+ * A result found by the tenant-wide search. It carries the run it came from,
+ * because unlike the per-run list the caller has no job in hand.
+ */
+export interface SearchHit extends DomainResult {
+  jobId: string;
+  job: { id: string; name: string; createdAt: string } | null;
 }
 
 export interface Deliverability {
@@ -111,6 +121,18 @@ export const api = {
       .then(unwrap<Page<DomainResult>>);
   },
 
+  /**
+   * Searches every run this tenant owns, not just one. The per-run filter can
+   * only see the run you are looking at, so a domain resolved in an earlier
+   * batch is invisible there.
+   */
+  searchAll: (q: string, params: Record<string, string> = {}) => {
+    const qs = new URLSearchParams({ q, ...params });
+    for (const [k, v] of [...qs.entries()]) if (!v) qs.delete(k);
+    return fetch(`${API_URL}/api/search?${qs}`, { headers: headers(), cache: 'no-store' })
+      .then(unwrap<Page<SearchHit>>);
+  },
+
   action: (id: string, verb: 'resume' | 'retry-errors' | 'cancel' | 'pause') =>
     fetch(`${API_URL}/api/jobs/${id}/${verb}`, { method: 'POST', headers: headers() }).then(unwrap<unknown>),
 
@@ -124,8 +146,9 @@ export const api = {
   deleteJob: (id: string) =>
     fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE', headers: headers() }).then(unwrap<unknown>),
 
+  /** The tenant's own DataForSEO account, at /api/me/account — not /api/account. */
   account: () =>
-    fetch(`${API_URL}/api/account`, { headers: headers(), cache: 'no-store' }).then(
+    fetch(`${API_URL}/api/me/account`, { headers: headers(), cache: 'no-store' }).then(
       unwrap<{
         login: string;
         balance: number | null;

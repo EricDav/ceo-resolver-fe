@@ -124,6 +124,9 @@ td.domain { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-si
 .small { font-size: 13px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 
+/* Plain text that needs to read as a problem, outside a .notice box. */
+.err { color: var(--bad); }
+
 .notice { padding: 10px 13px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; }
 .notice.err { background: var(--bad-soft); color: var(--bad); }
 .notice.ok { background: var(--ok-soft); color: var(--ok); }
