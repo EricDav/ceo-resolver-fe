@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="inner">
             <h1>Leader Resolver</h1>
             <Link href="/" className="small">Runs</Link>
+            <Link href="/search" className="small">Search</Link>
             <Link href="/admin" className="small">Admin</Link>
             <span className="spacer" />
             <AccountBadge />
