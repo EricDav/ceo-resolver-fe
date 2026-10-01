@@ -1,32 +1,41 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { api, DomainResult } from '@/lib/api';
 
 const TITLES = ['CEO', 'Chief Executive', 'President', 'Managing Director'];
 
+/** A row from the tenant-wide search knows its own run; a per-run row does not. */
+type Row = DomainResult & { jobId?: string; job?: { id: string; name: string } | null };
+
 export function ResultsTable({
-  jobId, rows, onChanged,
+  jobId, rows, onChanged, showRun = false,
 }: {
-  jobId: string;
-  rows: DomainResult[];
+  /** The run every row belongs to. Omitted when rows span several runs. */
+  jobId?: string;
+  rows: Row[];
   onChanged: () => void;
+  /** Adds a column naming the run each row came from. */
+  showRun?: boolean;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const [draftTitle, setDraftTitle] = useState('CEO');
   const [saving, setSaving] = useState(false);
 
-  function startEdit(r: DomainResult) {
+  function startEdit(r: Row) {
     setEditing(r.id);
     setDraftName(r.leaderName ?? '');
     setDraftTitle(r.title ?? 'CEO');
   }
 
-  async function save(resultId: string) {
+  async function save(row: Row) {
+    const owner = row.jobId ?? jobId;
+    if (!owner) return;
     setSaving(true);
     try {
-      await api.review(jobId, resultId, {
+      await api.review(owner, row.id, {
         leaderName: draftName.trim(),
         title: draftTitle,
         status: draftName.trim() ? 'resolved' : 'not_found',
@@ -45,6 +54,7 @@ export function ResultsTable({
       <thead>
         <tr>
           <th style={{ width: '22%' }}>Domain</th>
+          {showRun && <th style={{ width: '14%' }}>Run</th>}
           <th style={{ width: '20%' }}>Leader</th>
           <th style={{ width: '14%' }}>Title</th>
           <th style={{ width: '10%' }}>Status</th>
@@ -60,7 +70,16 @@ export function ResultsTable({
             <tr key={r.id}>
               <td className="domain">
                 <a href={`https://${r.domain}`} target="_blank" rel="noreferrer">{r.domain}</a>
+                {r.sourceEmail && <div className="small muted">{r.sourceEmail}</div>}
               </td>
+
+              {showRun && (
+                <td className="small">
+                  {r.job
+                    ? <Link href={`/jobs/${r.job.id}`}>{r.job.name}</Link>
+                    : <span className="muted">&mdash;</span>}
+                </td>
+              )}
 
               <td>
                 {isEditing ? (
@@ -116,7 +135,7 @@ export function ResultsTable({
               <td>
                 {isEditing ? (
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="small primary" disabled={saving} onClick={() => save(r.id)}>Save</button>
+                    <button className="small primary" disabled={saving} onClick={() => save(r)}>Save</button>
                     <button className="small" disabled={saving} onClick={() => setEditing(null)}>x</button>
                   </div>
                 ) : (

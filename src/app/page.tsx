@@ -14,6 +14,7 @@ export default function HomePage() {
   const [text, setText] = useState('');
   const [skip, setSkip] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [quick, setQuick] = useState('');
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -85,6 +86,24 @@ export default function HomePage() {
 
       <section className="panel">
         <h2>Runs</h2>
+        <form
+          className="toolbar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = quick.trim();
+            router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+          }}
+        >
+          <div style={{ flex: '1 1 240px' }}>
+            <label htmlFor="quick">Find a domain across every run</label>
+            <input id="quick" type="text" value={quick} placeholder="acme.com"
+                   onChange={(e) => setQuick(e.target.value)} />
+          </div>
+          <div style={{ flex: '0 0 auto', alignSelf: 'flex-end' }}>
+            <button className="small" type="submit">Search</button>
+          </div>
+        </form>
+
         {!jobs.length && <p className="muted small">No runs yet.</p>}
         <div className="joblist">
           {jobs.map((j) => (

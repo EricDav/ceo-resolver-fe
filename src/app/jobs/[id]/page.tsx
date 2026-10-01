@@ -3,7 +3,8 @@
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, Deliverability, DomainResult, Job, Page, StatusCounts, StatusFilter } from '@/lib/api';
-import { ResultsTable } from './results-table';
+import { useDebounced } from '@/lib/use-debounced';
+import { ResultsTable } from '@/components/results-table';
 
 const ACTIVE = new Set(['queued', 'running']);
 const PAGE_SIZE = 100;
@@ -23,6 +24,9 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   const [search, setSearch] = useState('');
   const [pageNo, setPageNo] = useState(1);
 
+  // The filter runs server-side, so hold each keystroke back briefly.
+  const searchTerm = useDebounced(search, 300);
+
   const loadJob = useCallback(() => {
     api.getJob(id).then(setJob).catch((e: Error) => setError(e.message));
     api.statusCounts(id).then(setCounts).catch(() => setCounts(null));
@@ -32,12 +36,13 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   const loadResults = useCallback(() => {
     api
       .results(id, {
-        status, confidence, search, mailStatus,
+        status, confidence, mailStatus,
+        search: searchTerm,
         page: String(pageNo), pageSize: String(PAGE_SIZE),
       })
       .then(setPage)
       .catch((e: Error) => setError(e.message));
-  }, [id, status, confidence, search, mailStatus, pageNo]);
+  }, [id, status, confidence, searchTerm, mailStatus, pageNo]);
 
   useEffect(() => { loadJob(); }, [loadJob]);
   useEffect(() => { loadResults(); }, [loadResults]);
@@ -207,6 +212,12 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
             <label htmlFor="f-search">Search domain or name</label>
             <input id="f-search" type="text" value={search}
                    onChange={(e) => { setSearch(e.target.value); setPageNo(1); }} />
+            <p className="small muted" style={{ marginTop: 6 }}>
+              This run only.{' '}
+              <Link href={search.trim() ? `/search?q=${encodeURIComponent(search.trim())}` : '/search'}>
+                Search all runs
+              </Link>
+            </p>
           </div>
           {(status || confidence || search || mailStatus) && (
             <div style={{ flex: '0 0 auto' }}>
